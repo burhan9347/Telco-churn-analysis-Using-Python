@@ -1,0 +1,134 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.container import Container
+from pandas.plotting import plot_params
+
+# called out the file from data
+df = pd.read_csv(r'C:\Users\Dell\OneDrive\Desktop\PythonProject1\Customer Churn.csv')
+
+# # checked the file discreption
+#
+#
+print(df.head())
+print(df.info())
+print(df.describe())
+
+# filled the emty spaces with 0 And converted the coulmn in flote data type
+
+df["TotalCharges"] = df["TotalCharges"].replace(" ", "0")
+df["TotalCharges"] = df["TotalCharges"].astype("float")
+
+# reverified the coulmn
+print(df.info())
+print(df.describe())
+print(df.isnull().sum().sum)
+print(df.duplicated().sum())
+print(df["customerID"].duplicated().sum())
+
+
+def conv(values):
+    if values == 1:
+        return "yes"
+    else:
+        return "no"
+
+
+# changing the seiourcitizen data format
+df['SeniorCitizen'] = df['SeniorCitizen'].apply(conv)
+print(df['SeniorCitizen'].unique())
+print(df.head())
+# now we are optimizing and understanding the data
+ax = sns.countplot(x='Churn', data=df)
+ax.bar_label(ax.containers[0])
+plt.title('Count of churn customers')
+plt.show()
+gb = df.groupby('Churn').agg({'Churn': 'count'})
+print(gb)
+plt.pie(gb['Churn'], labels=gb.index, autopct='%1.2f%%')
+plt.title('Custmer Churn %')
+plt.show()
+# from this we can figur out that 26.5 of our custmer have Churned out lets figure out ht reason
+
+
+# lets compare the seniour citizen
+# Step 1: Create a crosstab of counts
+ct = pd.crosstab(df['SeniorCitizen'], df['Churn'])
+
+# Step 2: Convert counts to percentages
+ct_percent = ct.div(ct.sum(axis=1), axis=0) * 100
+
+# Step 3: Plot stacked bar chart
+ax = ct_percent.plot(kind='bar', stacked=True, color=['orange', 'blue'])
+
+# Step 4: Add percentage labels
+for container in ax.containers:
+    ax.bar_label(container, fmt='%.1f%%', label_type='center')
+
+# Step 5: Customize plot
+plt.title('Churn Percentage by Senior Citizen Status')
+plt.xlabel('Senior Citizen (No, Yes)')
+plt.ylabel('Percentage')
+plt.legend(title='Churn')
+plt.tight_layout()
+plt.show()
+
+# comparing Churn with respect to tenure
+
+plt.figure(figsize=(9, 4))
+sns.histplot(x="tenure", hue="Churn", data=df, bins=36)
+plt.show()
+
+# peple who have inetiated our services are genrally churing our services specficly 1-2 month custmer
+
+plt.figure(figsize=(9, 4))
+cx = sns.countplot(x="Contract", data=df, hue="Churn")
+for container in cx.containers:
+    cx.bar_label(container, label_type='center')
+plt.title('Number of Customer Churn by Contract')
+plt.show()
+
+# we need to convence people to take a long deuration plan
+
+print(df.columns.values)
+
+# List of service-related columns
+columns = ['PhoneService', 'MultipleLines', 'InternetService', 'OnlineSecurity',
+           'OnlineBackup', 'DeviceProtection', 'TechSupport', 'StreamingTV',
+           'StreamingMovies']
+
+# Set up subplot grid
+fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 12))
+axes = axes.flatten()
+fig.suptitle('Churn Percentage by Service Features', fontsize=16)
+
+# Loop through each column
+for i, col in enumerate(columns):
+    # Create crosstab and normalize to get percentages
+    ct = pd.crosstab(df[col], df['Churn'], normalize='index') * 100
+
+    # Plot stacked bar chart
+    ax = axes[i]
+    ct.plot(kind='bar', stacked=True, ax=ax, color=['skyblue', 'salmon'])
+
+    # Add percentage labels
+    for container in ax.containers:
+        ax.bar_label(container, fmt='%.1f%%', label_type='center', fontsize=8)
+
+    ax.set_title(col)
+    ax.set_ylabel('Percentage')
+    ax.set_xlabel('')
+    ax.legend(title='Churn', loc='upper right')
+
+# Adjust layout
+plt.tight_layout(rect=[0, 0, 1, 0.96])
+plt.show()
+
+# The plots illustrate churn percentages across various service features, revealing clear patterns. Customers with fiber optic internet and those without online security or tech support show significantly higher churn rates. In contrast, users with no internet service consistently exhibit the lowest churn. These insights highlight which services may influence customer retention most
+# lets also compare the payment method
+plt.figure(figsize=(9, 4))
+cx = sns.countplot(x="PaymentMethod", data=df, hue="Churn")
+for container in cx.containers:
+    cx.bar_label(container, label_type='center')
+plt.title('Number of Customer Churn by PaymentMethod')
+plt.show()
